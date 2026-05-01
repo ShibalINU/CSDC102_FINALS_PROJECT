@@ -6,22 +6,22 @@
 This project is a terminal-based C++ recreation of the classic arcade game Crossy Road. Instead of flashy graphics, the game runs entirely in the console, focusing on logic, timing, and player interaction.
 
 **Your mission?**
-_👉 Help the player cross dangerous terrains and survive as long as possible._
+_Help the player cross dangerous terrains and survive as long as possible._
 
-**🕹️ Gameplay Features**
-  - _🌍 Multi-Terrain System_
-  - 🛣️ Roads – Avoid fast-moving vehicles
-  - _🌊 Rivers – Jump across floating platforms/logs_
-  - _🟩 Safe Zones – Brief moments to pause and plan_
+**Gameplay Features**
+  - _ Multi-Terrain System_
+  -  Roads – Avoid fast-moving vehicles
+  - _Rivers – Jump across floating platforms/logs_
+  - _Safe Zones – Brief moments to pause and plan_
 
 
 **Core Mechanics**
-- ⬆️ _Move forward to progress_
-- ⬅️➡️ _Move sideways to dodge obstacles_
-- ❌ Collision = Game Over_
-- ⏱️_ Increasing difficulty over time_
-
-**🛠️ Tech Stack**
+-  _Move forward to progress_
+-  _Move sideways to dodge obstacles_
+- Collision = Game Over_
+- _ Increasing difficulty over time_
+ 
+**Tech Stack**
 - **Language:** C++
 - **Environment:** Terminal / Console
 - **Concepts Used:**
@@ -31,7 +31,7 @@ _👉 Help the player cross dangerous terrains and survive as long as possible._
   - Game Loop & Real-Time Input Handling
 ---
 
-## 🚀 How to Run  
+## How to Run  
 
 **1. Clone the repository**
 
