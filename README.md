@@ -3,7 +3,7 @@
 
 🎮 Project Overview
 
-This project is a terminal-based C++ recreation of the classic arcade game Crossy Road. Instead of flashy graphics, the game runs entirely in the console—focusing on logic, timing, and player interaction.
+This project is a terminal-based C++ recreation of the classic arcade game Crossy Road. Instead of flashy graphics, the game runs entirely in the console, focusing on logic, timing, and player interaction.
 
 **Your mission?**
 _👉 Help the player cross dangerous terrains and survive as long as possible._
