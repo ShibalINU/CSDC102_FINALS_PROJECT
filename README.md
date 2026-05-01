@@ -16,19 +16,19 @@ _👉 Help the player cross dangerous terrains and survive as long as possible._
 
 
 **Core Mechanics**
-  -⬆️ _Move forward to progress_
-  -⬅️➡️ _Move sideways to dodge obstacles_
-  -❌ Collision = Game Over_
-  -⏱️_ Increasing difficulty over time_
+- ⬆️ _Move forward to progress_
+- ⬅️➡️ _Move sideways to dodge obstacles_
+- ❌ Collision = Game Over_
+- ⏱️_ Increasing difficulty over time_
 
 **🛠️ Tech Stack**
-**Language:** C++
-**Environment:** Terminal / Console
-**Concepts Used:**
-- Object-Oriented Programming (OOP)
-- File Handling (for high scores)
-- Data Structures (linked lists / arrays)
-- Game Loop & Real-Time Input Handling
+- **Language:** C++
+- **Environment:** Terminal / Console
+- **Concepts Used:**
+  - Object-Oriented Programming (OOP)
+  - File Handling (for high scores)
+  - Data Structures (linked lists / arrays)
+  - Game Loop & Real-Time Input Handling
 ---
 
 ## 🚀 How to Run  
