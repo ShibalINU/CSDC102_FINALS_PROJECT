@@ -1,73 +1,357 @@
 #include <iostream>
+#include <string>
+#include <vector>
+#include <cstdlib>
+
+#ifdef _WIN32
+#include <conio.h>
+#include <windows.h>
+#define CLEAR "cls"
+void sleep_ms(int ms) { Sleep(ms); }
+
+// Switches terminal to UTF-8 and enables ANSI color processing
+void initConsole()
+{
+    SetConsoleOutputCP(65001);
+    SetConsoleCP(65001);
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD mode = 0;
+    GetConsoleMode(hOut, &mode);
+    SetConsoleMode(hOut, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+}
+#else
+#include <unistd.h>
+#define CLEAR "clear"
+void sleep_ms(int ms) { usleep(ms * 1000); }
+void initConsole() {}
+#endif
+
 using namespace std;
 
-void titleScreen()
+// ─── ANSI COLOR CODES ───────────────────────────────────────────────────────
+const string RESET = "\033[0m";
+const string BOLD = "\033[1m";
+const string DIM = "\033[2m";
+
+const string FG_YELLOW = "\033[38;5;220m";
+const string FG_GOLD = "\033[38;5;178m";
+const string FG_ORANGE = "\033[38;5;208m";
+const string FG_GREEN = "\033[38;5;82m";
+const string FG_TEAL = "\033[38;5;51m";
+const string FG_CYAN = "\033[38;5;87m";
+const string FG_WHITE = "\033[38;5;255m";
+const string FG_LGRAY = "\033[38;5;250m";
+const string FG_DGRAY = "\033[38;5;240m";
+const string FG_RED = "\033[38;5;203m";
+const string FG_PINK = "\033[38;5;213m";
+const string FG_LBLUE = "\033[38;5;117m";
+
+// ─── CURSOR CONTROL ─────────────────────────────────────────────────────────
+void moveCursor(int row, int col)
 {
+    cout << "\033[" << row << ";" << col << "H";
+}
+void hideCursor() { cout << "\033[?25l"; }
+void showCursor() { cout << "\033[?25h"; }
+void clearScreen() { system(CLEAR); }
 
-    string reset = "\033[0m";
-    string yellow = "\033[1;33m";
-    string cyan = "\033[1;36m";
-    string white = "\033[1;37m";
-    string gray = "\033[0;37m";
-    string green = "\033[1;32m";
-    string magenta = "\033[1;35m";
+// ─── BORDER SWEEP ANIMATION ─────────────────────────────────────────────────
+void animateBorderSweep()
+{
+    const int W = 70;
+    const int H = 24;
 
-    system("cls");
+    cout << FG_TEAL << BOLD;
 
-    cout << yellow;
-    cout << "=========================== TITLE SCREEN ===========================\n";
-    cout << reset;
+    moveCursor(1, 1);
+    for (int i = 0; i < W; i++)
+    {
+        cout << "=";
+        cout.flush();
+        sleep_ms(8);
+    }
 
-    cout << cyan;
-    cout << "====================================================================\n";
-    cout << yellow;
-    cout << "|                                                                  |\n";
-    cout << "|                _____    ____       _      _____                  |\n";
-    cout << "|               |  __ \\  / __ \\     / \\    |  __ \\                 |\n";
-    cout << "|               | |__) || |  | |   / _ \\   | |  | |                |\n";
-    cout << "|               |  _  / | |  | |  / ___ \\  | |  | |                |\n";
-    cout << "|               | | \\ \\ | |__| | / /   \\ \\ | |__| |                |\n";
-    cout << "|               |_|  \\_\\ \\____/ /_/     \\_\\|_____/                 |\n";
-    cout << "|                                                                  |\n";
-    cout << green;
-    cout << "|   _____  _____    ____    _____   _____  _____  _   _   _____    |\n";
-    cout << "|  / ____||  __ \\  / __ \\  / ____| / ____||_   _|| \\ | | / ____|   |\n";
-    cout << "| | |     | |__) || |  | || (___  | (___    | |  |  \\| || |  __    |\n";
-    cout << "| | |     |  _  / | |  | | \\___ \\  \\___ \\   | |  | . ` || | |_ |   |\n";
-    cout << "| | |____ | | \\ \\ | |__| | ____) | ____) | _| |_ | |\\  || |__| |   |\n";
-    cout << "|  \\_____||_|  \\_\\ \\____/ |_____/ |_____/ |_____||_| \\_| \\_____|   |\n";
-    cout << "|                                                                  |\n";
-    cout << yellow;
-    cout << "|                     C + +   T E R M I N A L                      |\n";
-    cout << "|                                                                  |\n";
-    cout << cyan;
-    cout << "====================================================================\n";
-    cout << reset;
+    for (int r = 2; r <= H; r++)
+    {
+        moveCursor(r, W);
+        cout << "|";
+        cout.flush();
+        sleep_ms(12);
+    }
 
-    cout << magenta;
-    cout << "Written for CSDC102 | Language: C++\n\n";
-    cout << reset;
+    for (int i = W; i >= 1; i--)
+    {
+        moveCursor(H + 1, i);
+        cout << "=";
+        cout.flush();
+        sleep_ms(8);
+    }
 
-    cout << white;
-    cout << "HOW TO PLAY:\n";
-    cout << reset;
+    for (int r = H; r >= 2; r--)
+    {
+        moveCursor(r, 1);
+        cout << "|";
+        cout.flush();
+        sleep_ms(12);
+    }
 
-    cout << "- Move with Arrow Keys\n";
-    cout << "- Dodge trucks (#####) in the ROAD ZONE\n";
-    cout << "- Hop on logs (====) in the RIVER ZONE\n";
-    cout << "- Reach the finish line 5 times to win!\n\n";
-
-    cout << yellow;
-    cout << "Press ENTER to start...";
-    cout << reset;
-
-    cin.ignore();
-    cin.get();
+    // Corners
+    moveCursor(1, 1);
+    cout << "+";
+    moveCursor(1, W);
+    cout << "+";
+    moveCursor(H + 1, 1);
+    cout << "+";
+    moveCursor(H + 1, W);
+    cout << "+";
+    cout << RESET;
+    cout.flush();
 }
 
+// ─── TITLE FADE-IN ──────────────────────────────────────────────────────────
+void printTitle()
+{
+    // "ROAD"
+    vector<string> road;
+    road.push_back("            ____     ___       _      ____  ");
+    road.push_back("           |  _ \\   / _ \\     / \\    |  _ \\ ");
+    road.push_back("           | |_) | | | | |   / _ \\   | | | |");
+    road.push_back("           |  _ <  | |_| |  / ___ \\  | |_| |");
+    road.push_back("           |_| \\_\\  \\___/  /_/   \\_\\ |____/ ");
+
+    // "CROSSING" — C-R-O-S-S-I-N-G verified
+    vector<string> crossing;
+    crossing.push_back("     _____   _____    ____   _____  _____  ___  _   _   _____ ");
+    crossing.push_back("    / ____| |  __ \\  / __ \\ / ____|/ ____||_ _|| \\ | | / ____|");
+    crossing.push_back("   | |      | |__) || |  | |\\___  \\\\___  \\ | | |  \\| || |  __");
+    crossing.push_back("   | |____  |  _  / | |__| | ___) | ___) | | | | |\\  || |_|  | ");
+    crossing.push_back("    \\_____| |_| \\_\\  \\____/ |_____/|_____/|___||_| \\_| \\_____|");
+
+    for (int i = 0; i < (int)road.size(); i++)
+    {
+        moveCursor(4 + i, 5);
+        if (i == 0 || i == 4)
+            cout << FG_GOLD << BOLD;
+        else if (i == 2)
+            cout << FG_YELLOW << BOLD;
+        else
+            cout << FG_ORANGE << BOLD;
+        cout << road[i] << RESET;
+        cout.flush();
+        sleep_ms(60);
+    }
+
+    for (int i = 0; i < (int)crossing.size(); i++)
+    {
+        moveCursor(10 + i, 3);
+        if (i == 0 || i == 4)
+            cout << FG_GREEN << BOLD;
+        else if (i == 2)
+            cout << FG_TEAL << BOLD;
+        else
+            cout << "\033[38;5;48m" << BOLD;
+        cout << crossing[i] << RESET;
+        cout.flush();
+        sleep_ms(60);
+    }
+
+    // Subtitle
+    moveCursor(16, 17);
+    cout << FG_LGRAY << DIM << "~  C + +   T E R M I N A L   G A M E  ~" << RESET;
+    cout.flush();
+    sleep_ms(200);
+
+    // Divider
+    moveCursor(17, 3);
+    cout << FG_DGRAY;
+    for (int i = 0; i < 66; i++)
+        cout << "-";
+    cout << RESET;
+    cout.flush();
+}
+
+// ─── CHICKEN BOUNCE ANIMATION ───────────────────────────────────────────────
+// Runs BELOW the main box (box bottom is row 25) — never overlaps any text
+void animateChicken(int passes)
+{
+    const int BASE_ROW = 27; // below box which ends at row 25
+    const int START_COL = 2;
+    const int END_COL = 66;
+    const int FRAME_COUNT = 4;
+
+    const string frames[4] = {
+        " (>'-')>",  // standing
+        "  ^('-')^", // mid-jump (one row up)
+        " (>'-')>",  // standing
+        " (v'-')v"   // squish land (one row down)
+    };
+    const int row_offset[4] = {0, -1, 0, 1};
+
+    // Draw a ground line for the chicken to run on
+    moveCursor(BASE_ROW + 2, START_COL);
+    cout << FG_DGRAY;
+    for (int i = 0; i < (END_COL - START_COL + 10); i++)
+        cout << "~";
+    cout << RESET;
+    cout.flush();
+
+    for (int p = 0; p < passes; p++)
+    {
+        for (int col = START_COL; col <= END_COL; col += 2)
+        {
+            int frame = (col / 2) % FRAME_COUNT;
+            int row = BASE_ROW + row_offset[frame];
+
+            // Erase previous chicken position (3 rows around base)
+            moveCursor(BASE_ROW - 1, col - 2);
+            cout << "          ";
+            moveCursor(BASE_ROW, col - 2);
+            cout << "          ";
+            moveCursor(BASE_ROW + 1, col - 2);
+            cout << "          ";
+
+            // Draw chicken
+            moveCursor(row, col);
+            cout << FG_YELLOW << BOLD << frames[frame] << RESET;
+
+            // Dust puff on landing
+            if (frame == 3)
+            {
+                moveCursor(BASE_ROW + 1, col + 1);
+                cout << FG_LGRAY << "* *" << RESET;
+            }
+
+            cout.flush();
+            sleep_ms(55);
+        }
+
+        // Erase chicken at end of pass
+        for (int r = BASE_ROW - 1; r <= BASE_ROW + 1; r++)
+        {
+            moveCursor(r, END_COL);
+            cout << "            ";
+        }
+        cout.flush();
+
+        if (p < passes - 1)
+            sleep_ms(120);
+    }
+
+    // Clean up all chicken rows + ground line after animation finishes
+    for (int r = BASE_ROW - 1; r <= BASE_ROW + 2; r++)
+    {
+        moveCursor(r, START_COL);
+        cout << "                                                                    ";
+    }
+    cout.flush();
+}
+
+// ─── BLINKING PROMPT ────────────────────────────────────────────────────────
+void blinkingPrompt()
+{
+    const int ROW = 23;
+    const int COL = 18;
+    const string msg = "[ Press ENTER to Start ]";
+
+    for (int blink = 0; blink < 6; blink++)
+    {
+        moveCursor(ROW, COL);
+        if (blink % 2 == 0)
+            cout << FG_CYAN << BOLD << msg << RESET;
+        else
+            cout << FG_DGRAY << DIM << msg << RESET;
+        cout.flush();
+        sleep_ms(420);
+    }
+
+    moveCursor(ROW, COL);
+    cout << FG_CYAN << BOLD << msg << RESET;
+    cout.flush();
+}
+
+// ─── INFO PANEL ─────────────────────────────────────────────────────────────
+void printInfo()
+{
+    moveCursor(18, 4);
+    cout << FG_WHITE << BOLD << "HOW TO PLAY" << RESET;
+    moveCursor(19, 4);
+    cout << FG_LGRAY << "Arrow Keys" << FG_DGRAY << " -- Move your chicken" << RESET;
+    moveCursor(20, 4);
+    cout << FG_RED << "#####" << FG_DGRAY << "  -- Dodge trucks!" << RESET;
+    moveCursor(21, 4);
+    cout << FG_LBLUE << "=====" << FG_DGRAY << "  -- Hop on logs" << RESET;
+    moveCursor(22, 4);
+    cout << FG_GREEN << "x5 wins" << FG_DGRAY << "     -- Win the game!" << RESET;
+
+    moveCursor(18, 44);
+    cout << FG_PINK << BOLD << "CSDC102 Project" << RESET;
+    moveCursor(19, 44);
+    cout << FG_DGRAY << "Language : " << FG_TEAL << "C++" << RESET;
+    moveCursor(20, 44);
+    cout << FG_DGRAY << "Engine   : " << FG_TEAL << "Terminal / ANSI" << RESET;
+    moveCursor(21, 44);
+    cout << FG_DGRAY << "Compiler : " << FG_TEAL << "g++ 6.3.0" << RESET;
+
+    cout.flush();
+}
+
+// ─── WAIT FOR ENTER ─────────────────────────────────────────────────────────
+void waitForEnter()
+{
+    cin.sync();
+    while (cin.get() != '\n')
+    {
+    }
+}
+
+// ─── TITLE SCREEN ────────────────────────────────────────────────────────────
+void titleScreen()
+{
+    hideCursor();
+    clearScreen();
+
+    animateBorderSweep();
+    sleep_ms(100);
+
+    printTitle();
+    sleep_ms(150);
+
+    printInfo();
+    sleep_ms(100);
+
+    animateChicken(1);
+    sleep_ms(150);
+
+    blinkingPrompt();
+
+    moveCursor(25, 1);
+    showCursor();
+    waitForEnter();
+
+    hideCursor();
+    clearScreen();
+    for (int f = 0; f < 3; f++)
+    {
+        moveCursor(12, 24);
+        cout << FG_GREEN << BOLD << "*** GAME STARTING ***" << RESET;
+        cout.flush();
+        sleep_ms(220);
+        moveCursor(12, 24);
+        cout << "                     ";
+        cout.flush();
+        sleep_ms(160);
+    }
+    sleep_ms(300);
+    clearScreen();
+    showCursor();
+}
+
+// ─── MAIN ────────────────────────────────────────────────────────────────────
 int main()
 {
+    initConsole(); // fix encoding + enable ANSI on Windows
     titleScreen();
-    cout << "\nGame starting...\n";
+    cout << FG_GREEN << "\nGame starting - good luck!\n"
+         << RESET;
     return 0;
 }
