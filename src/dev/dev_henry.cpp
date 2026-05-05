@@ -3,7 +3,7 @@ using namespace std;
 
 void titleScreen()
 {
-    // ANSI color codes
+
     string reset = "\033[0m";
     string yellow = "\033[1;33m";
     string cyan = "\033[1;36m";
@@ -12,15 +12,15 @@ void titleScreen()
     string green = "\033[1;32m";
     string magenta = "\033[1;35m";
 
-    system("cls"); // use "clear" for Linux/Mac
+    system("cls");
 
     cout << yellow;
     cout << "=========================== TITLE SCREEN ===========================\n";
     cout << reset;
 
-    cout << cyan; // Cyan, bold
+    cout << cyan;
     cout << "====================================================================\n";
-    cout << yellow; // Yellow
+    cout << yellow;
     cout << "|                                                                  |\n";
     cout << "|                _____    ____       _      _____                  |\n";
     cout << "|               |  __ \\  / __ \\     / \\    |  __ \\                 |\n";
@@ -29,7 +29,7 @@ void titleScreen()
     cout << "|               | | \\ \\ | |__| | / /   \\ \\ | |__| |                |\n";
     cout << "|               |_|  \\_\\ \\____/ /_/     \\_\\|_____/                 |\n";
     cout << "|                                                                  |\n";
-    cout << green; // Green
+    cout << green;
     cout << "|   _____  _____    ____    _____   _____  _____  _   _   _____    |\n";
     cout << "|  / ____||  __ \\  / __ \\  / ____| / ____||_   _|| \\ | | / ____|   |\n";
     cout << "| | |     | |__) || |  | || (___  | (___    | |  |  \\| || |  __    |\n";
@@ -40,9 +40,9 @@ void titleScreen()
     cout << yellow;
     cout << "|                     C + +   T E R M I N A L                      |\n";
     cout << "|                                                                  |\n";
-    cout << cyan; // Cyan
+    cout << cyan;
     cout << "====================================================================\n";
-    cout << reset; // Reset
+    cout << reset;
 
     cout << magenta;
     cout << "Written for CSDC102 | Language: C++\n\n";
@@ -62,14 +62,12 @@ void titleScreen()
     cout << reset;
 
     cin.ignore();
-    cin.get(); // wait for Enter
+    cin.get();
 }
 
 int main()
 {
     titleScreen();
-
-    // placeholder for next part of your game
     cout << "\nGame starting...\n";
     return 0;
 }
