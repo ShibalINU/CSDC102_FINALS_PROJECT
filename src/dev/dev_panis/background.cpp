@@ -16,6 +16,8 @@ int main()
     cout << "Stopping music...\n";
     cout << "suf mga pogi\n";
 
+    cout << "sp pogi!";
+
     PlaySound(NULL, NULL, 0);
 
     return 0;
