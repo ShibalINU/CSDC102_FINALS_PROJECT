@@ -13,12 +13,6 @@ int main()
     PlaySound("songs/Stardew.wav", NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
     cout << "Press Enter to Stop..\n";
     cin.get();
-    cout << "Stopping music...\n";
-    cout << "suf mga pogi\n";
-    cout << "supot";
-    cout << "miss u";
-
-    cout << "sp pogi!";
 
     PlaySound(NULL, NULL, 0);
 
