@@ -5,14 +5,16 @@
 
 using namespace std;
 
-int main (){
-
+int main()
+{
 
     cout << "========= CHAYKIN RUDE KRUSIIG =========" << endl;
     cout << "Playing music...\n";
     PlaySound("songs/Stardew.wav", NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
     cout << "Press Enter to Stop..\n";
     cin.get();
+    cout << "Stopping music...\n";
+    cout << "suf mga pogi\n";
 
     PlaySound(NULL, NULL, 0);
 
