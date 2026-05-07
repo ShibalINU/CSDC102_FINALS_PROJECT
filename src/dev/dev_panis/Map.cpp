@@ -45,7 +45,7 @@ ZoneType zoneMap[Total_Rows] = {  // Sabi sainyo eh parang struct lang
 };
 
 
-const int Lane_width = 40; // yung loob ng map to width nung mapa syug
+const int LANE_WIDTH = 40; // yung loob ng map to width nung mapa syug
 const int Full_width = 42; // borders
 
 
@@ -53,7 +53,7 @@ const int Full_width = 42; // borders
 string generateBufferLane() {
     string lane = "|"; // for the border to guys para may istitik
 
-    for (int i = 0; i < Lane_width; i++) { // to equal the dots for the specific width lang for the obstacles
+    for (int i = 0; i < LANE_WIDTH; i++) { // to equal the dots for the specific width lang for the obstacles
         lane += '.'; // padagdag ng padagdag na dots
     }
 
@@ -62,13 +62,13 @@ string generateBufferLane() {
 
 // para sa road naman guys, may buff ako ni gom guys na may mga truck
 string generateRoadLane(int Trucks){
-    string inner(Lane_width, '.'); // syempre si agihan dapat buffer man siya para maka agi kapadi
+    string inner(LANE_WIDTH, '.'); // syempre si agihan dapat buffer man siya para maka agi kapadi
 
     //magamit kita srand syug sa truck para random si spawn niya 
     for(int i = 0; i < Trucks; i++) {
 
         // set ta kung gano kataba si truck tas i change ta ning -5 si width baga para ma change ning truck man ngaya
-        int position = rand() % (Lane_width - 5); // random start
+        int position = rand() % (LANE_WIDTH - 5); // random start
 
         for (int j = 0; j < 5; j++) {
             inner[position + j] = '#'; //watip emoji pwede
@@ -85,11 +85,11 @@ string generateRoadLane(int Trucks){
 // just gonna be the same to the truck method
 string generateRiverLane(int Logs) {
 
-    string inner(Lane_width, "~");
+    string inner(LANE_WIDTH, '~');
 
     for (int i = 0; i < Logs; i++) {
 
-        int start = rand() % (Lane_width - 4)
+        int start = rand() % (LANE_WIDTH - 4);
 
         for (int j = 0; j < 4; j++){
             inner[start + j] = '=';
