@@ -17,9 +17,7 @@ int main()
     cout << "suf mga pogi\n";
     cout << "supot";
     cout << "miss u";
-    cout << "i love sachi";
-    cout << "sachi is the best";
-    cout << "masarap si henry";
+
     cout << "sp pogi!";
 
     PlaySound(NULL, NULL, 0);
