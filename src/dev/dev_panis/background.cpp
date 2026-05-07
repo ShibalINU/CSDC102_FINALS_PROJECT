@@ -15,6 +15,7 @@ int main()
     cin.get();
     cout << "Stopping music...\n";
     cout << "suf mga pogi\n";
+    cout << "supot";
 
     cout << "sp pogi!";
 
