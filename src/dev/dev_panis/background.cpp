@@ -17,6 +17,7 @@ int main()
     cout << "suf mga pogi\n";
     cout << "supot";
     cout << "miss u";
+    cout << "kailan ka nagpatuli?: "; 
 
     cout << "sp pogi!";
 
