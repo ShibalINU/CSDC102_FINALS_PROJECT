@@ -10,7 +10,7 @@ int main()
 
     cout << "========= CHAYKIN RUDE KRUSIIG =========" << endl;
     cout << "Playing music...\n";
-    PlaySound("songs/Stardew.wav", NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
+    PlaySound("songs/Lifetime.wav", NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
     cout << "Press Enter to Stop..\n";
     cin.get();
     cout << "Stopping music...\n";
