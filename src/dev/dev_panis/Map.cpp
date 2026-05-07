@@ -23,25 +23,26 @@ enum ZoneType { // so we can use either stuct naman but with enum we wont need t
 const int Total_Rows = 20; // pwede man dawa pira bente muna
 
 ZoneType zoneMap[Total_Rows] = {  // Sabi sainyo eh parang struct lang
-    FINISH,
-    ROAD,
-    ROAD,
-    ROAD,
-    BUFFER,
-    RIVER,
-    RIVER,
-    ROAD,
-    ROAD,
-    RIVER,
-    BUFFER,
-    ROAD,
-    BUFFER,
-    RIVER,
-    RIVER,
-    ROAD,
-    ROAD,
-    BUFFER,
-    START
+    FINISH, // 0
+    ROAD, // 1
+    ROAD, // 2
+    ROAD, // 3
+    BUFFER, // 4
+    RIVER, // 5
+    RIVER, // 6
+    RIVER, // *7
+    ROAD, // 7
+    ROAD, // 8
+    RIVER, // 9
+    BUFFER, // 10
+    ROAD, // 11
+    BUFFER, // 12
+    RIVER, // 13
+    RIVER, // 14
+    ROAD, // 15
+    ROAD, // 16
+    BUFFER, // 17
+    START // 18
 };
 
 
@@ -57,7 +58,7 @@ string generateBufferLane() {
         lane += '.'; // padagdag ng padagdag na dots
     }
 
-    return lane; // result
+    return lane + "|"; // result
 }
 
 // para sa road naman guys, may buff ako ni gom guys na may mga truck
