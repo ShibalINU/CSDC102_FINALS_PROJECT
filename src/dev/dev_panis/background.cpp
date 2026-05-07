@@ -14,6 +14,8 @@ int main (){
     cout << "Press Enter to Stop..\n";
     cin.get();
 
+    cout << "sp pogi!";
+
     PlaySound(NULL, NULL, 0);
 
     return 0;
