@@ -16,6 +16,7 @@ int main()
     cout << "Stopping music...\n";
     cout << "suf mga pogi\n";
     cout << "supot";
+    cout << "miss u";
 
     cout << "sp pogi!";
 
