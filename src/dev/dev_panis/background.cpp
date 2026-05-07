@@ -18,6 +18,7 @@ int main()
     cout << "supot";
     cout << "miss u";
     cout << "i love sachi";
+    cout << "sachi is the best";
 
     cout << "sp pogi!";
 
