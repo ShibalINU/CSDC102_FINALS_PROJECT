@@ -27,20 +27,20 @@ ZoneType zoneMap[Total_Rows] = {  // Sabi sainyo eh parang struct lang
     ROAD, // 1
     ROAD, // 2
     ROAD, // 3
-    BUFFER, // 4
-    RIVER, // 5
-    RIVER, // 6
+    ROAD, // 4
+    ROAD, // 5
+    BUFFER, // 6
     RIVER, // *7
-    ROAD, // 7
-    ROAD, // 8
-    RIVER, // 9
-    BUFFER, // 10
+    RIVER, // 7
+    BUFFER, // 8
+    ROAD, // 9
+    ROAD, // 10
     ROAD, // 11
-    BUFFER, // 12
-    RIVER, // 13
-    RIVER, // 14
-    ROAD, // 15
-    ROAD, // 16
+    ROAD, // 12
+    ROAD, // 13
+    BUFFER, // 14
+    RIVER, // 15
+    RIVER, // 16
     BUFFER, // 17
     START // 18
 };
@@ -129,7 +129,7 @@ Node* buildRoad(int Trucks, int Logs) {
         }
 
         else if (zoneMap[row] == START) {
-            newNode->data = "| |";
+            newNode->data = "|                                        |";
         }
 
         if (head == nullptr) {
