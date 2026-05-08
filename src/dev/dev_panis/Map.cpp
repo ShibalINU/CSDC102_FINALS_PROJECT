@@ -3,6 +3,10 @@
 #include <cstdlib>
 #include <ctime>
 
+#include <windows.h>
+#include <mmsystem.h>
+#pragma comment(lib, "winmm.lib")
+
 using namespace std;
 
 struct Node {
@@ -105,7 +109,7 @@ Node* buildRoad(int Trucks, int Logs) {
 
     Node* tail = nullptr; // this points to the last node
 
-    for (int row =0; row < Total_Rows; row++){
+    for (int row = 0; row < Total_Rows; row++){
         Node* newNode = new Node();
         newNode->next = nullptr;
 
@@ -233,34 +237,31 @@ void printList(Node* head) {
 
 // now for the test
 int main () {
+
+    cout << "========= CHAYKIN RUDE KRUSIIG =========" << endl;
+    cout << "Playing music...\n";
+    PlaySound("songs/Lifetime.wav", NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
+
+
+
     //lets send the random number gen muna 
     srand(time(0));
 
-    //print zonemap
-    printZoneMap();
-
-    cout << "Building road [Easy Mode]" << endl;
     Node* head = buildRoad(2, 2);
-    printList(head);
 
-    cout << "Fetch row 7 should be road ata or river: " << endl;
-    Node* row7 = getLane(head, 7);
-    if (row7 != nullptr) {
-        cout << "Row 7 data: " << row7->data << endl;
+    Node* current = head;
+    while (current != nullptr) {
+        cout << current->data << endl;
+        current = current->next;
     }
 
-    cout << "Fetch Row 0 (should be finish): " << endl;
-    Node* row0 = getLane(head, 0);
-    if (row0 != nullptr) {
-        cout << "Row 0 data: " << row0->data << endl;
-    }
-
-    cout << "\nFreeing linked lis.." << endl; // to confirm no dangling pointer
     freeList(head);
 
-    if(head == nullptr) {
-        cout << "freeList() success - head is now nullptr. YEHEYY" << endl;
-    }
+    cout << "Press Enter to Stop..\n";
+    cin.get();
+
+    PlaySound(NULL, NULL, 0);
+
 
     return 0;
 
