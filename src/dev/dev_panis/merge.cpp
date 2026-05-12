@@ -447,12 +447,46 @@ string generateRiverLane(int Logs) {
 
         int start = rand() % (LANE_WIDTH - 4);
 
-        for (int j = 0; j < 4; j++){
-            inner[start + j] = '=';
+        // 25% chance maging alligator
+        bool isAlligator = (rand() % 4 == 0);
+
+        for (int j = 0; j < 4; j++) {
+
+            if (isAlligator) {
+                inner[start + j] = 'A';
+            }
+
+            else {
+                inner[start + j] = '=';
+            }
         }
     }
 
     return "|" + inner + "|";
+}
+
+// ─── SHIFT LEFT ─────────────────────────────────────────────
+void shiftLeft(string& lane) {
+
+    char first = lane[1];
+
+    for (int i = 1; i < LANE_WIDTH; i++) {
+        lane[i] = lane[i + 1];
+    }
+
+    lane[LANE_WIDTH] = first;
+}
+
+// ─── SHIFT RIGHT ────────────────────────────────────────────
+void shiftRight(string& lane) {
+
+    char last = lane[LANE_WIDTH];
+
+    for (int i = LANE_WIDTH; i > 1; i--) {
+        lane[i] = lane[i - 1];
+    }
+
+    lane[1] = last;
 }
 
 Node* buildRoad(int Trucks, int Logs) {
@@ -522,6 +556,100 @@ Node* getLane(Node* head, int index) {
     return current; // now current points to the index
 }
 
+void shiftObstacles(Node* head) {
+
+    Node* current = head;
+
+    int roadIndex = 0;
+    int riverIndex = 0;
+
+    for (int row = 0; row < Total_Rows && current != nullptr; row++) {
+
+        // ROAD MOVEMENT
+        if (zoneMap[row] == ROAD) {
+
+            roadIndex++;
+
+            // odd lanes → RIGHT
+            if (roadIndex % 2 == 1) {
+                shiftRight(current->data);
+            }
+
+            // even lanes → LEFT
+            else {
+                shiftLeft(current->data);
+            }
+        }
+
+        // RIVER MOVEMENT
+        else if (zoneMap[row] == RIVER) {
+
+            riverIndex++;
+
+            // odd river → RIGHT
+            if (riverIndex % 2 == 1) {
+                shiftRight(current->data);
+            }
+
+            // even river → LEFT
+            else {
+                shiftLeft(current->data);
+            }
+        }
+
+        current = current->next;
+    }
+}
+
+bool checkAlligator(Node* head, int playerX, int playerY) {
+
+    if (zoneMap[playerY] != RIVER) {
+        return false;
+    }
+
+    Node* lane = getLane(head, playerY);
+
+    if (lane == nullptr) {
+        return false;
+    }
+
+    return lane->data[playerX] == 'A';
+}
+
+void updatePlayerWithLog(Node* head, int& playerX, int playerY) {
+
+    if (zoneMap[playerY] != RIVER) {
+        return;
+    }
+
+    int riverIndex = 0;
+
+    for (int r = 0; r <= playerY; r++) {
+
+        if (zoneMap[r] == RIVER) {
+            riverIndex++;
+        }
+    }
+
+    // odd river lanes move RIGHT
+    if (riverIndex % 2 == 1) {
+        playerX++;
+    }
+
+    // even river lanes move LEFT
+    else {
+        playerX--;
+    }
+
+    // clamp
+    if (playerX < 1) {
+        playerX = 1;
+    }
+
+    if (playerX > LANE_WIDTH) {
+        playerX = LANE_WIDTH;
+    }
+} 
 // FREELIST pero ako hindi pa FREE
 
 void freeList(Node*& head) {
@@ -591,35 +719,109 @@ int main () {
 
     PlaySound("songs/Lifetime.wav", NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
 
-    
-
-    initConsole(); // fix encoding + enable ANSI on Windows
+    initConsole();
 
     titleScreen();
 
-
     cout << FG_GREEN << "\nGame starting - good luck!\n" << RESET;
 
-    //lets send the random number gen muna 
     srand(time(0));
 
     Node* head = buildRoad(2, 2);
 
-    Node* current = head;
-    while (current != nullptr) {
-        cout << current->data << endl;
-        current = current->next;
+    int playerX = 20;
+    int playerY = 18;
+
+    while (true) {
+
+        system(CLEAR);
+
+        // ─── PLAYER INPUT ─────────────────────
+        if (_kbhit()) {
+
+            int key = _getch();
+
+            // arrow keys return 224 first
+            if (key == 224) {
+
+                key = _getch();
+
+                // UP
+                if (key == 72 && playerY > 0) {
+                    playerY--;
+                }
+
+                // DOWN
+                else if (key == 80 && playerY < Total_Rows - 1) {
+                    playerY++;
+                }
+
+                // LEFT
+                else if (key == 75 && playerX > 1) {
+                    playerX--;
+                }
+
+                // RIGHT
+                else if (key == 77 && playerX < LANE_WIDTH) {
+                    playerX++;
+                }
+            }
+        }
+
+        // move player with logs
+        updatePlayerWithLog(head, playerX, playerY);
+
+        // move obstacles
+        shiftObstacles(head);
+
+        // display map
+        Node* current = head;
+        int row = 0;
+
+        while (current != nullptr) {
+
+            string temp = current->data;
+
+            // draw player
+            if (row == playerY) {
+                temp[playerX] = 'P';
+            }
+
+            // color alligators
+        for (int i = 0; i < (int)temp.size(); i++) {
+            if (row == playerY && i == playerX) {
+                cout << FG_YELLOW << 'P' << RESET;
+            }
+            else if (temp[i] == 'A') {
+                cout << FG_GREEN << 'A' << RESET;
+            }
+            else {
+                cout << temp[i];
+            }
+        }
+        
+        cout << endl; 
+
+        current = current -> next; 
+        row++; 
+    }
+        // alligator collision
+        if (checkAlligator(head, playerX, playerY)) {
+
+            cout << FG_RED << "\nYOU GOT EATEN BY AN ALLIGATOR!\n" << RESET;
+
+            break;
+        }
+
+        sleep_ms(200);
     }
 
     freeList(head);
 
-    cout << "Press Enter to Stop..\n";
+    cout << "\nPress Enter to Stop..\n";
     cin.get();
 
     PlaySound(NULL, NULL, 0);
 
-
     return 0;
-
-
 }
