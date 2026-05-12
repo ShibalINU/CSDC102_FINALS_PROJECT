@@ -478,7 +478,7 @@ string generateRiverLane(int laneNum) {
     return "|" + inner + "|";
 }
 
-// ─── BUILD ROAD ──────────────────────────────────────────────────────────────
+// BUILD ROAD 
 // Tracks roadIndex and riverIndex to pass the correct lane number
 Node* buildRoad(ZoneType zoneMap[]) {
     Node* head     = nullptr;
@@ -532,7 +532,7 @@ Node* getLane(Node* head, int index) {
     return current; // now current points to the index
 }
 
-//  SHIFT LEFT ──────────────────────────────────────────────────────────────
+//  SHIFT LEFT
 void shiftLeft(string& lane) {
     char bg = '.';
     for (int i = 1; i <= LANE_WIDTH; i++) {
@@ -567,10 +567,10 @@ void shiftLeft(string& lane) {
     for (auto& o : obstacles) {
         int newStart = (o.start - 1 + LANE_WIDTH) % LANE_WIDTH;
 
-        // ── Resize on wrap ───────────────────────────────────────────────
+        // Resize on wrap 
         // Wrap is detected when the obstacle's new position crosses the edge
         if (newStart + o.len > LANE_WIDTH) {
-            int minSize, maxSize;
+            int minSize, maxSize;// you can change the sizes of the obstacles going to the left
             if      (o.ch == '#') { minSize = 3; maxSize = 5; } // trucks
             else if (o.ch == '=') { minSize = 3; maxSize = 5; } // logs
             else if (o.ch == 'A') { minSize = 3; maxSize = 5; } // alligators
@@ -579,7 +579,7 @@ void shiftLeft(string& lane) {
             int delta = (rand() % 3) - 1; // randomly -1, 0, or +1
             o.len = max(minSize, min(maxSize, o.len + delta));
         }
-        // ─────────────────────────────────────────────────────────────────
+        
 
         for (int j = 0; j < o.len; j++)
             inner[(newStart + j) % LANE_WIDTH] = o.ch;
@@ -588,7 +588,7 @@ void shiftLeft(string& lane) {
     lane = "|" + inner + "|";
 }
 
-//  SHIFT RIGHT ─────────────────────────────────────────────────────────────
+//  SHIFT RIGHT
 void shiftRight(string& lane) {
     char bg = '.';
     for (int i = 1; i <= LANE_WIDTH; i++) {
@@ -623,18 +623,18 @@ void shiftRight(string& lane) {
     for (auto& o : obstacles) {
         int newStart = (o.start + 1) % LANE_WIDTH;
 
-        // ── Resize on wrap ───────────────────────────────────────────────
+        // ── Resize on wrap 
         if (newStart + o.len > LANE_WIDTH) {
-            int minSize, maxSize;
-            if      (o.ch == '#') { minSize = 3; maxSize = 7; }
-            else if (o.ch == '=') { minSize = 2; maxSize = 6; }
-            else if (o.ch == 'A') { minSize = 2; maxSize = 5; }
+            int minSize, maxSize;//you can change the sizes of the obstacles going to the right here
+            if      (o.ch == '#') { minSize = 3; maxSize = 5; }
+            else if (o.ch == '=') { minSize = 3; maxSize = 5; }
+            else if (o.ch == 'A') { minSize = 3; maxSize = 5; }
             else                  { minSize = 1; maxSize = 5; }
 
             int delta = (rand() % 3) - 1;
             o.len = max(minSize, min(maxSize, o.len + delta));
         }
-        // ─────────────────────────────────────────────────────────────────
+        // ===----------
 
         for (int j = 0; j < o.len; j++)
             inner[(newStart + j) % LANE_WIDTH] = o.ch;
@@ -643,7 +643,7 @@ void shiftRight(string& lane) {
     lane = "|" + inner + "|";
 }
 
-//  SHIFT OBSTACLES ─────────────────────────────────────────────────────────
+//  SHIFT OBSTACLES ====------
 void shiftObstacles(Node* head) {
 
     Node* current = head;
