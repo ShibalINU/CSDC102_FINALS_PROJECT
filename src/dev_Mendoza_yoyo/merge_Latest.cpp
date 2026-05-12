@@ -417,122 +417,98 @@ string generateBufferLane() {
 }
 
 // para sa road naman guys, may buff ako ni gom guys na may mga truck
-string generateRoadLane(int Trucks){
-    string inner(LANE_WIDTH, '.'); // syempre si agihan dapat buffer man siya para maka agi kapadi
+string generateRoadLane(int laneNum) {
 
-    //magamit kita srand syug sa truck para random si spawn niya 
-    for(int i = 0; i < Trucks; i++) {
+    // now (2 or 3) / 2
+    int trucks;
+    if (laneNum % 2 == 1)
+        trucks = (rand() % 2 == 0) ? 2 : 3; // odd lane → 2 or 3
+    else
+        trucks = 2;  // even lane → always 2
 
-        // set ta kung gano kataba si truck tas i change ta ning -5 si width baga para ma change ning truck man ngaya
-        int position = rand() % (LANE_WIDTH - 5); // random start
+    string inner(LANE_WIDTH, '.');
+    const int TRUCK_SIZE = 5;
+    int sectionSize = LANE_WIDTH / trucks;
 
-        for (int j = 0; j < 5; j++) {
-            inner[position + j] = '#'; //watip emoji pwede
-        }
+    for (int i = 0; i < trucks; i++) {
+        int secStart = i * sectionSize + 1;
+        int secEnd   = (i + 1) * sectionSize - TRUCK_SIZE - 1;
+        if (secEnd < secStart) secEnd = secStart;
 
-    }
-
-    return "|" + inner + "|"; 
-    // si inner si obstacles;
-}
-
-
-// now is for the river and logs ~ this as water and this = as logs
-// just gonna be the same to the truck method
-string generateRiverLane(int Logs) {
-
-    string inner(LANE_WIDTH, '~');
-
-    for (int i = 0; i < Logs; i++) {
-
-        int start = rand() % (LANE_WIDTH - 4);
-
-        // 25% chance maging alligator
-        bool isAlligator = (rand() % 4 == 0);
-
-        for (int j = 0; j < 4; j++) {
-
-            if (isAlligator) {
-                inner[start + j] = 'A';
-            }
-
-            else {
-                inner[start + j] = '=';
-            }
-        }
+        int position = secStart + rand() % (secEnd - secStart + 1);
+        for (int j = 0; j < TRUCK_SIZE; j++)
+            inner[position + j] = '#';
     }
 
     return "|" + inner + "|";
 }
 
-// ─── SHIFT LEFT ─────────────────────────────────────────────
-void shiftLeft(string& lane) {
 
-    char first = lane[1];
+// now is for the river and logs ~ this as water and this = as logs
+// just gonna be the same to the truck method
 
-    for (int i = 1; i < LANE_WIDTH; i++) {
-        lane[i] = lane[i + 1];
+// RIVER LANE 
+// laneNum decides odd (3 or 5 logs) or even (4 logs)  
+// One guaranteed alligator per lane, section-based so logs never stack
+string generateRiverLane(int laneNum) {
+
+    int logs;
+    if (laneNum % 2 == 1)
+        logs = (rand() % 2 == 0) ? 3 : 5; // odd lane → 3 or 5
+    else
+        logs = 4;                           // even lane → 4
+
+    string inner(LANE_WIDTH, '~');
+    const int OBS_SIZE = 4;
+    int sectionSize = LANE_WIDTH / logs;
+    int alligatorIdx = rand() % logs;      // one alligator guaranteed
+
+    for (int i = 0; i < logs; i++) {
+        int secStart = i * sectionSize + 1;
+        int secEnd   = (i + 1) * sectionSize - OBS_SIZE - 1;
+        if (secEnd < secStart) secEnd = secStart;
+
+        int start = secStart + rand() % (secEnd - secStart + 1);
+        char ch = (i == alligatorIdx) ? 'A' : '=';
+
+        for (int j = 0; j < OBS_SIZE; j++)
+            inner[start + j] = ch;
     }
 
-    lane[LANE_WIDTH] = first;
+    return "|" + inner + "|";
 }
 
-// ─── SHIFT RIGHT ────────────────────────────────────────────
-void shiftRight(string& lane) {
+// BUILD ROAD 
+// Tracks roadIndex and riverIndex to pass the correct lane number
+Node* buildRoad(ZoneType zoneMap[]) {
+    Node* head     = nullptr;
+    Node* tail     = nullptr;
+    int roadIndex  = 0;
+    int riverIndex = 0;
 
-    char last = lane[LANE_WIDTH];
+    for (int row = 0; row < Total_Rows; row++) {
+        Node* newNode  = new Node();
+        newNode->next  = nullptr;
 
-    for (int i = LANE_WIDTH; i > 1; i--) {
-        lane[i] = lane[i - 1];
-    }
-
-    lane[1] = last;
-}
-
-Node* buildRoad(int Trucks, int Logs) {
-    Node* head = nullptr; // this will point to the first node which is finish
-
-    Node* tail = nullptr; // this points to the last node
-
-    for (int row = 0; row < Total_Rows; row++){
-        Node* newNode = new Node();
-        newNode->next = nullptr;
-
-        if (row == 0){
-
+        if (row == 0)
             newNode->data = "|========================================|";
 
+        else if (zoneMap[row] == ROAD) {
+            roadIndex++;
+            newNode->data = generateRoadLane(roadIndex);   // pass lane number
         }
-
-        else if (zoneMap[row] == ROAD){ // for the road duon sa strings to print the rows
-            newNode->data = generateRoadLane(Trucks); // to print the truks in the string of ROAD 
-
-        }
-
         else if (zoneMap[row] == RIVER) {
-            newNode->data = generateRiverLane(Logs); // all the same
+            riverIndex++;
+            newNode->data = generateRiverLane(riverIndex); // pass lane number
         }
-
-        else if (zoneMap[row] == BUFFER) {
+        else if (zoneMap[row] == BUFFER)
             newNode->data = generateBufferLane();
-        }
 
-        else if (zoneMap[row] == START) {
+        else if (zoneMap[row] == START)
             newNode->data = "|                                        |";
-        }
 
-        if (head == nullptr) {
-            head = newNode;
-            tail = newNode;
-        }
-
-        else {
-            //updates current tail
-            tail->next = newNode;
-            tail = newNode;
-        }
-
-
+        if (head == nullptr) { head = newNode; tail = newNode; }
+        else                 { tail->next = newNode; tail = newNode; }
     }
 
     return head;
@@ -556,45 +532,135 @@ Node* getLane(Node* head, int index) {
     return current; // now current points to the index
 }
 
+//  SHIFT LEFT
+void shiftLeft(string& lane) {
+    char bg = '.';
+    for (int i = 1; i <= LANE_WIDTH; i++) {
+        if (lane[i] == '.' || lane[i] == '~') { bg = lane[i]; break; }
+    }
+
+    struct Obs { int start, len; char ch; };
+    vector<Obs> obstacles;
+
+    int i = 0;
+    while (i < LANE_WIDTH) {
+        char c = lane[i + 1];
+        if (c != bg) {
+            Obs o = { i, 0, c };
+            while (i < LANE_WIDTH && lane[i + 1] == o.ch) { o.len++; i++; }
+            obstacles.push_back(o);
+        } else { i++; }
+    }
+
+    if (obstacles.size() >= 2) {
+        Obs& F = obstacles.front();
+        Obs& L = obstacles.back();
+        if (F.ch == L.ch && F.start == 0 && L.start + L.len == LANE_WIDTH) {
+            Obs merged = { L.start, L.len + F.len, L.ch };
+            obstacles.erase(obstacles.begin());
+            obstacles.pop_back();
+            obstacles.push_back(merged);
+        }
+    }
+
+    string inner(LANE_WIDTH, bg);
+    for (auto& o : obstacles) {
+        int newStart = (o.start - 1 + LANE_WIDTH) % LANE_WIDTH;
+
+        // Resize on wrap 
+        // Wrap is detected when the obstacle's new position crosses the edge
+        if (newStart + o.len > LANE_WIDTH) {
+            int minSize, maxSize;// you can change the sizes of the obstacles going to the left
+            if      (o.ch == '#') { minSize = 3; maxSize = 5; } // trucks
+            else if (o.ch == '=') { minSize = 3; maxSize = 5; } // logs
+            else if (o.ch == 'A') { minSize = 3; maxSize = 5; } // alligators
+            else                  { minSize = 1; maxSize = 5; }
+
+            int delta = (rand() % 3) - 1; // randomly -1, 0, or +1
+            o.len = max(minSize, min(maxSize, o.len + delta));
+        }
+        
+
+        for (int j = 0; j < o.len; j++)
+            inner[(newStart + j) % LANE_WIDTH] = o.ch;
+    }
+
+    lane = "|" + inner + "|";
+}
+
+//  SHIFT RIGHT
+void shiftRight(string& lane) {
+    char bg = '.';
+    for (int i = 1; i <= LANE_WIDTH; i++) {
+        if (lane[i] == '.' || lane[i] == '~') { bg = lane[i]; break; }
+    }
+
+    struct Obs { int start, len; char ch; };
+    vector<Obs> obstacles;
+
+    int i = 0;
+    while (i < LANE_WIDTH) {
+        char c = lane[i + 1];
+        if (c != bg) {
+            Obs o = { i, 0, c };
+            while (i < LANE_WIDTH && lane[i + 1] == o.ch) { o.len++; i++; }
+            obstacles.push_back(o);
+        } else { i++; }
+    }
+
+    if (obstacles.size() >= 2) {
+        Obs& F = obstacles.front();
+        Obs& L = obstacles.back();
+        if (F.ch == L.ch && F.start == 0 && L.start + L.len == LANE_WIDTH) {
+            Obs merged = { L.start, L.len + F.len, L.ch };
+            obstacles.erase(obstacles.begin());
+            obstacles.pop_back();
+            obstacles.push_back(merged);
+        }
+    }
+
+    string inner(LANE_WIDTH, bg);
+    for (auto& o : obstacles) {
+        int newStart = (o.start + 1) % LANE_WIDTH;
+
+        // ── Resize on wrap 
+        if (newStart + o.len > LANE_WIDTH) {
+            int minSize, maxSize;//you can change the sizes of the obstacles going to the right here
+            if      (o.ch == '#') { minSize = 3; maxSize = 5; }
+            else if (o.ch == '=') { minSize = 3; maxSize = 5; }
+            else if (o.ch == 'A') { minSize = 3; maxSize = 5; }
+            else                  { minSize = 1; maxSize = 5; }
+
+            int delta = (rand() % 3) - 1;
+            o.len = max(minSize, min(maxSize, o.len + delta));
+        }
+        // ===----------
+
+        for (int j = 0; j < o.len; j++)
+            inner[(newStart + j) % LANE_WIDTH] = o.ch;
+    }
+
+    lane = "|" + inner + "|";
+}
+
+//  SHIFT OBSTACLES ====------
 void shiftObstacles(Node* head) {
 
     Node* current = head;
-
     int roadIndex = 0;
     int riverIndex = 0;
 
     for (int row = 0; row < Total_Rows && current != nullptr; row++) {
 
-        // ROAD MOVEMENT
         if (zoneMap[row] == ROAD) {
-
             roadIndex++;
-
-            // odd lanes → RIGHT
-            if (roadIndex % 2 == 1) {
-                shiftRight(current->data);
-            }
-
-            // even lanes → LEFT
-            else {
-                shiftLeft(current->data);
-            }
+            if (roadIndex % 2 == 1) shiftRight(current->data);
+            else                    shiftLeft(current->data);
         }
-
-        // RIVER MOVEMENT
         else if (zoneMap[row] == RIVER) {
-
             riverIndex++;
-
-            // odd river → RIGHT
-            if (riverIndex % 2 == 1) {
-                shiftRight(current->data);
-            }
-
-            // even river → LEFT
-            else {
-                shiftLeft(current->data);
-            }
+            if (riverIndex % 2 == 1) shiftRight(current->data);
+            else                     shiftLeft(current->data);
         }
 
         current = current->next;
@@ -616,7 +682,7 @@ bool checkAlligator(Node* head, int playerX, int playerY) {
     return lane->data[playerX] == 'A';
 }
 
-void updatePlayerWithLog(Node* head, int& playerX, int playerY)
+void updatePlayerWithLog(Node* head, int& playerX, int playerY)// for henry and kat pala to lmao welcome guys
 {
     if (zoneMap[playerY] != RIVER) return;
 
@@ -720,7 +786,7 @@ void printList(Node* head) {
 // now for the test
 int main () {
 
-    PlaySound("songs/Lifetime.wav", NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
+    PlaySound("SC:/Users/Aljosh Mendoza/OneDrive/문서/GitHub/CSDC102_FINALS_PROJECT/src/dev_Mendoza_yoyo/Songs/slimeyfox.mp3", NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);// doesn't wwork still finding out why
 
     initConsole();
 
@@ -730,7 +796,7 @@ int main () {
 
     srand(time(0));
 
-    Node* head = buildRoad(2, 2);
+    Node* head = buildRoad(zoneMap);
 
     int playerX = 20;
     int playerY = 18;

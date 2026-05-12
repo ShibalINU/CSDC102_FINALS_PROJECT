@@ -3,7 +3,7 @@
 #include <vector>
 #include <cstdlib>
 
-#ifdef _WIN32
+#ifdef _WIN32p
 #include <conio.h>
 #include <windows.h>
 #define CLEAR "cls"
