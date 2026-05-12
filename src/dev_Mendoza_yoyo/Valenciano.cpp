@@ -295,8 +295,12 @@ string generateRiverLane(int laneNum, int numLogs)
             pos = 1;
         if (pos + 4 > FIELD_WIDTH)
             pos = FIELD_WIDTH - 3;
+        bool isAlligator = (rand() % 4 == 0); // 25% chance
+
         for (int k = 0; k < 4 && (pos + k) <= FIELD_WIDTH; k++)
-            lane[pos + k] = '=';
+        {
+            lane[pos + k] = isAlligator ? 'A' : '=';
+        }   
     }
     return lane;
 }
@@ -306,29 +310,7 @@ string generateRiverLane(int laneNum, int numLogs)
  * 
  * Randomly converts some logs into ('=') deadly fake alligator logs ('A')
  */ 
-void addAlligatorsToRiverLane(string &lane)
-{
-    for (int i = 1; i <= FIELD_WIDTH - 3; i++)
-    {
-        // Detect a 4-character log
-        if (lane[i] == '=' &&
-            lane[i + 1] == '=' &&
-            lane[i + 2] == '=' &&
-            lane[i + 3] == '=')
-        {
-            // 25% chance to become an alligator
-            if (rand() % 4 == 0)
-            {
-                lane[i] = 'A';
-                lane[i + 1] = 'A';
-                lane[i + 2] = 'A';
-                lane[i + 3] = 'A';
-            }
 
-            i += 3;
-        }
-    }
-}
 /*
  * generateBufferLane()
  *
@@ -408,7 +390,6 @@ NodePtr buildRoad(int numTrucks, int numLogs)
             break;
         case ZONE_RIVER:
             newNode->data = generateRiverLane(++riverCount, numLogs);
-            addAlligatorsToRiverLane(newNode->data);
             break;
         case ZONE_BUFFER:
             newNode->data = generateBufferLane();
