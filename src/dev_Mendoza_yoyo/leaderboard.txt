@@ -1,4 +1,6 @@
 yoyo 3 Easy WIN
+henry 3 Easy WIN
+Anonymous 2 Easy DROWNED
 test_3 1 Easy QUIT
 test_4 1 Easy QUIT
 Anonymous 1 Hard QUIT
@@ -6,5 +8,3 @@ Anonymous 1 Easy DROWNED
 Anonymous 1 Hard TRUCK
 Romeo 0 Romeo 3
 Aljosh 0 Easy QUIT
-josh 0 Hard DROWNED
-watthehel 0 Easy QUIT
