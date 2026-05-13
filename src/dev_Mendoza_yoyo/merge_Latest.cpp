@@ -571,10 +571,10 @@ void shiftLeft(string& lane) {
         // Wrap is detected when the obstacle's new position crosses the edge
         if (newStart + o.len > LANE_WIDTH) {
             int minSize, maxSize;// you can change the sizes of the obstacles going to the left
-            if      (o.ch == '#') { minSize = 3; maxSize = 5; } // trucks
-            else if (o.ch == '=') { minSize = 3; maxSize = 5; } // logs
-            else if (o.ch == 'A') { minSize = 3; maxSize = 5; } // alligators
-            else                  { minSize = 1; maxSize = 5; }
+            if      (o.ch == '#') { minSize = 5; maxSize = 5; } // trucks
+            else if (o.ch == '=') { minSize = 4; maxSize = 4; } // logs
+            else if (o.ch == 'A') { minSize = 5; maxSize = 5; } // alligators
+            else                  { minSize = 5; maxSize = 5; }
 
             int delta = (rand() % 3) - 1; // randomly -1, 0, or +1
             o.len = max(minSize, min(maxSize, o.len + delta));
@@ -626,9 +626,9 @@ void shiftRight(string& lane) {
         // ── Resize on wrap 
         if (newStart + o.len > LANE_WIDTH) {
             int minSize, maxSize;//you can change the sizes of the obstacles going to the right here
-            if      (o.ch == '#') { minSize = 3; maxSize = 5; }
-            else if (o.ch == '=') { minSize = 3; maxSize = 5; }
-            else if (o.ch == 'A') { minSize = 3; maxSize = 5; }
+            if      (o.ch == '#') { minSize = 5; maxSize = 5; }
+            else if (o.ch == '=') { minSize = 4; maxSize = 4; }
+            else if (o.ch == 'A') { minSize = 4; maxSize = 4; }
             else                  { minSize = 1; maxSize = 5; }
 
             int delta = (rand() % 3) - 1;
