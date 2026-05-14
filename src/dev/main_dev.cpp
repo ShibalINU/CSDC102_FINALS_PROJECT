@@ -490,10 +490,17 @@ void displayRoad(NodePtr head,
     CLEAR_SCREEN;
 
     // ── Title banner ──────────────────────────────────────────────────────────
-    cout << "---------- Road Crossing Challenge ----------\n";
-    cout << "Player: " << playerName
-         << " | Lives: " << lives
-         << " | Crossings: " << crossings << "\n";
+        cout << R"(
+    ____  ____   ___  ____  ____  _  _     ____  _____   __  ____
+    / ___)( __ \ / __)(  __)/ ___)( \/ )   (  _ \(  _  ) / _\(    \
+    ( (__   (__ ( \__ \ ) _) \___ \ )  /     )   / )(_)(  /    \) D (
+    \___) (____/ (___/(____)(____/(__/     (__\_)(_____)\_/\_/(____/
+    )" << "\n";
+        cout << "=====================[ ROAD CROSSING CHALLENGE ]====================\n";
+        cout << " Player: " << left << setw(20) << playerName
+            << "| Lives: " << lives
+            << "  | Crossings: " << crossings << "/" << WIN_CROSSINGS << "\n";
+        cout << "=====================================================================\n";
 
     // ── Walk the list, overlaying 'P' at the player's position ───────────────
     NodePtr cur = head;
@@ -515,8 +522,8 @@ void displayRoad(NodePtr head,
     }
 
     // ── Bottom status line ────────────────────────────────────────────────────
-    cout << "Lives: " << lives << " | Crossings: " << crossings << "\n";
-    cout << "(Arrow keys: move | Q: quit)\n";
+    cout << "=====================================================================\n";
+    cout << "  Controls: Arrow Keys = move  |  Q = quit\n";
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
