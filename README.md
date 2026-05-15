@@ -61,3 +61,10 @@ g++ main.cpp -o main -lwinmm
 ```
 ./main
 ```
+
+**Screenshot Gallery**
+_**Title Screen**_
+<img width="585" height="439" alt="Title Screen" src="https://github.com/user-attachments/assets/8a914874-1408-4e2b-a727-88747a9373bd" />
+
+_**Leaderboard**_
+<img width="473" height="322" alt="Leaderboard" src="https://github.com/user-attachments/assets/b3f85f10-8acc-49ea-b00d-22e1b94437aa" />
