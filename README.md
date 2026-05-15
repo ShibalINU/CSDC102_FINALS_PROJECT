@@ -1,5 +1,7 @@
 # CSDC102_Final Project: Road Crossing Challenge
 ---
+Project Documentation: [DOCUMENTATION-CSDC102_CrossyRoad_FinalProject.pdf](https://github.com/user-attachments/files/27785312/DOCUMENTATION-CSDC102_CrossyRoad_FinalProject.pdf)
+
 
 Project Overview
 
