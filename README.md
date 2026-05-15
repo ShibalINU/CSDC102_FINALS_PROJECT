@@ -44,7 +44,6 @@ cd src
 **2. Compile the program**
 ```
 g++ main.cpp -o crossy
-
 ```
 **4. Run the game**
 ```
