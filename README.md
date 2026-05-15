@@ -11,8 +11,8 @@ This project is a terminal-based C++ recreation of the classic arcade game Cross
 _Help the player cross dangerous terrains and survive as long as possible._
 
 **Gameplay Features**
-  - _ Multi-Terrain System_
-  -  Roads – Avoid fast-moving vehicles
+  - _Multi-Terrain System_
+  -  _Roads – Avoid fast-moving vehicles_
   - _Rivers – Jump across floating platforms/logs_
   - _Safe Zones – Brief moments to pause and plan_
   - _Alligators - Chompy buddies ready to kill you_
