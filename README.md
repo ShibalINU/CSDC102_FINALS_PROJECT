@@ -2,8 +2,9 @@
 ---
 **Project Documentation:** [DOCUMENTATION-CSDC102_CrossyRoad_FinalProject.pdf](https://github.com/user-attachments/files/27785312/DOCUMENTATION-CSDC102_CrossyRoad_FinalProject.pdf)
 
-**Gameplay Video** https://www.youtube.com/watch?v=El45V7cxx7Y
+**Gameplay Video:** https://www.youtube.com/watch?v=El45V7cxx7Y
 
+**Screenshots of Title Screen, Gameplay, and Leaderboard:** https://drive.google.com/drive/folders/1KKR3U21kvsU5PN6WxV9MW8bEOXIQsUnJ?usp=drive_link
 
 Project Overview
 
