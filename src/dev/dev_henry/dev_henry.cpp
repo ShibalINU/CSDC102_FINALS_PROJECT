@@ -24,8 +24,6 @@ void initConsole()
     DWORD mode = 0;
     GetConsoleMode(hOut, &mode);
     SetConsoleMode(hOut, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
-    // Switch stdout to binary mode so Windows doesn't translate \n -> \r\n,
-    // which would double-count bytes and stall large single-write flushes.
     _setmode(_fileno(stdout), _O_BINARY);
 }
 #else
@@ -55,6 +53,12 @@ const string FG_PINK = "\033[38;5;213m";
 const string FG_LBLUE = "\033[38;5;117m";
 const string FG_BROWN = "\033[38;5;94m";
 
+// Background flash colors for damage indicator
+const string BG_RED = "\033[48;5;160m";
+const string BG_ORANGE = "\033[48;5;202m";
+const string BG_TEAL = "\033[48;5;30m";
+const string BG_GREEN = "\033[48;5;22m";
+
 // ─── CURSOR CONTROL ─────────────────────────────────────────────────────────
 void moveCursor(int row, int col) { cout << "\033[" << row << ";" << col << "H"; }
 void hideCursor() { cout << "\033[?25l"; }
@@ -68,30 +72,20 @@ void clearScreen()
 
 // ============================================================================
 //  DOUBLE-BUFFER RENDERER
-// ─────────────────────────────────────────────────────────────────────────────
-//  Strategy: build the entire frame as a vector of "rendered line" strings
-//  (including ANSI codes), compare each line to the previous frame, and only
-//  emit an absolute cursor-position + new content for lines that changed.
-//  This cuts stdout writes by ~80-90% on a typical game frame where most
-//  lines (buffer rows, unchanged road tiles) are identical to last frame.
-//
-//  A single fwrite() drains the accumulated output at the end of each frame,
-//  keeping the write count at 1 regardless of how many lines changed.
 // ============================================================================
 struct DoubleBuffer
 {
-    vector<string> front; // what is currently on screen
-    vector<string> back;  // what we want to draw this frame
-    string pending;       // accumulated escape+content for the current frame
+    vector<string> front;
+    vector<string> back;
+    string pending;
 
     void init(int rows)
     {
         front.assign(rows, "");
         back.assign(rows, "");
-        pending.reserve(1 << 16); // 64 KB initial reservation
+        pending.reserve(1 << 16);
     }
 
-    // Call at the start of each frame to reset the back-buffer.
     void beginFrame()
     {
         for (auto &s : back)
@@ -99,30 +93,22 @@ struct DoubleBuffer
         pending.clear();
     }
 
-    // Append rendered content to line `row` in the back buffer.
     void writeLine(int row, const string &s)
     {
         if (row >= 0 && row < (int)back.size())
             back[row] += s;
     }
 
-    // Diff back vs front; emit only changed lines to `pending`.
-    // Uses absolute cursor positioning (\033[R;CH) so lines can be
-    // updated in any order without a full screen repaint.
     void endFrame()
     {
         for (int r = 0; r < (int)back.size(); r++)
         {
             if (back[r] != front[r])
             {
-                // Move cursor to start of this row (1-based).
-                // Use a compact numeric move: \033[<row>;1H
                 char movbuf[24];
                 int n = snprintf(movbuf, sizeof(movbuf), "\033[%d;1H", r + 1);
                 pending.append(movbuf, n);
                 pending += back[r];
-                // Erase to end-of-line to clear any leftover characters
-                // from a previously longer line.
                 pending += "\033[K";
                 front[r] = back[r];
             }
@@ -134,7 +120,6 @@ struct DoubleBuffer
         }
     }
 
-    // Force a full repaint next frame (e.g. after clearScreen()).
     void invalidate()
     {
         for (auto &s : front)
@@ -142,10 +127,45 @@ struct DoubleBuffer
     }
 };
 
-// Global double-buffer instance.
 static DoubleBuffer g_buf;
-// Total logical rows the buffer covers (map rows + HUD rows).
-static const int BUF_ROWS = 30; // 20 map + ~6 HUD + 4 spare
+static const int BUF_ROWS = 35; // extra rows for damage UI
+
+// ============================================================================
+//  SOUND EFFECTS
+// ============================================================================
+// Non-blocking one-shot SFX — SND_NOSTOP prevents killing the BGM channel.
+// winmm supports two channels: looping BGM + one-shot SFX.
+void playSFX(const char *file)
+{
+    PlaySound(file, NULL, SND_FILENAME | SND_ASYNC | SND_NOSTOP);
+}
+
+// ============================================================================
+//  DAMAGE FLASH STATE
+// ============================================================================
+static bool g_flashActive = false;
+static int g_flashFrames = 0;
+static string g_flashMsg = "";
+static string g_flashFg = FG_WHITE;
+static string g_flashBg = BG_RED;
+static string g_flashIcon = "";
+const int FLASH_DURATION = 12; // ~400ms at 33ms/frame
+
+// Hearts display — track previous lives to animate heart loss
+static int g_prevLives = 3;
+
+void triggerFlash(const string &msg, const string &fg, const string &bg,
+                  const string &icon, const char *sfxFile)
+{
+    g_flashMsg = msg;
+    g_flashFg = fg;
+    g_flashBg = bg;
+    g_flashIcon = icon;
+    g_flashFrames = FLASH_DURATION;
+    g_flashActive = true;
+    if (sfxFile && sfxFile[0] != '\0')
+        playSFX(sfxFile);
+}
 
 // ============================================================================
 //  MAP CONFIGURATION
@@ -163,27 +183,11 @@ enum ZoneType
 };
 
 ZoneType zoneMap[Total_Rows] = {
-    FINISH, // 0
-    ROAD,   // 1
-    ROAD,   // 2
-    ROAD,   // 3
-    ROAD,   // 4
-    ROAD,   // 5
-    BUFFER, // 6
-    RIVER,  // 7
-    RIVER,  // 8
-    BUFFER, // 9
-    ROAD,   // 10
-    ROAD,   // 11
-    ROAD,   // 12
-    ROAD,   // 13
-    ROAD,   // 14
-    BUFFER, // 15
-    RIVER,  // 16
-    RIVER,  // 17
-    BUFFER, // 18
-    START   // 19
-};
+    FINISH, ROAD, ROAD, ROAD, ROAD, ROAD,
+    BUFFER, RIVER, RIVER,
+    BUFFER, ROAD, ROAD, ROAD, ROAD, ROAD,
+    BUFFER, RIVER, RIVER,
+    BUFFER, START};
 
 // ============================================================================
 //  DIFFICULTY SETTINGS
@@ -204,10 +208,6 @@ DifficultySettings DIFFICULTIES[3] = {
     {"Easy", 2, 3, 33, 5, 3, 0, false},
     {"Hard", 2, 3, 33, 3, 5, 0, false},
     {"Extreme", 3, 3, 33, 2, 7, 0, true}};
-// NOTE: renderMs set to 33 for all difficulties (~30 fps cap).
-// The original 80 ms was the main source of sluggishness; obstacle speed
-// is now controlled solely by obstacleEvery (unchanged), so gameplay feel
-// is identical — it just updates the screen 2-3x more often.
 
 DifficultySettings g_diff = DIFFICULTIES[0];
 
@@ -289,7 +289,6 @@ void displayLeaderboard()
         cout << "  RANK  NAME               SCORE  DIFF        RESULT\n";
         cout << "  " << string(54, '-') << "\n"
              << RESET;
-
         for (int i = 0; i < (int)g_leaderboard.size(); i++)
         {
             auto &e = g_leaderboard[i];
@@ -301,7 +300,6 @@ void displayLeaderboard()
                 cout << FG_ORANGE;
             else
                 cout << FG_DGRAY;
-
             cout << "  #" + to_string(i + 1) + "   ";
             string nm = e.name;
             if ((int)nm.size() > 18)
@@ -347,27 +345,17 @@ string generateRoadLane(int laneNum)
     int trucks = (laneNum % 2 == 1)
                      ? g_diff.trucks + (rand() % 2)
                      : g_diff.trucks;
-
-    const int TRUCK_SIZE = 5;
-    const int MIN_GAP = 2;
-
-    while (trucks > 1 &&
-           trucks * TRUCK_SIZE + (trucks - 1) * MIN_GAP > LANE_WIDTH)
+    const int TRUCK_SIZE = 5, MIN_GAP = 2;
+    while (trucks > 1 && trucks * TRUCK_SIZE + (trucks - 1) * MIN_GAP > LANE_WIDTH)
         trucks--;
-
     string inner(LANE_WIDTH, '.');
-    int spacing = LANE_WIDTH / (trucks + 1);
-    int prevEnd = 0;
-
+    int spacing = LANE_WIDTH / (trucks + 1), prevEnd = 0;
     for (int t = 0; t < trucks; t++)
     {
-        int base = spacing * (t + 1) - (TRUCK_SIZE / 2);
-        base += (rand() % 5) - 2;
-
+        int base = spacing * (t + 1) - (TRUCK_SIZE / 2) + (rand() % 5) - 2;
         int minPos = prevEnd + MIN_GAP;
         if (base < minPos)
             base = minPos;
-
         int maxPos = LANE_WIDTH - TRUCK_SIZE;
         int trucksLeft = trucks - t - 1;
         if (trucksLeft > 0)
@@ -378,13 +366,10 @@ string generateRoadLane(int laneNum)
             base = maxPos;
         if (base < 0)
             base = 0;
-
         for (int j = 0; j < TRUCK_SIZE && base + j < LANE_WIDTH; j++)
             inner[base + j] = '#';
-
         prevEnd = base + TRUCK_SIZE;
     }
-
     return "|" + inner + "|";
 }
 
@@ -393,7 +378,6 @@ string generateRiverLane(int laneNum)
     int totalObjs = (laneNum % 2 == 1)
                         ? g_diff.logs + (rand() % 2)
                         : g_diff.logs;
-
     const int OBS_SIZE = 4;
     int maxFit = LANE_WIDTH / (OBS_SIZE + 1);
     if (totalObjs > maxFit)
@@ -402,47 +386,37 @@ string generateRiverLane(int laneNum)
         totalObjs = 1;
 
     vector<bool> isGator(totalObjs, false);
-
     if (g_diff.extraGatorRoll)
     {
         int safeSlots = min(g_diff.logs, totalObjs);
         int gatorSlots = totalObjs - safeSlots;
-
         if (gatorSlots > 0)
         {
             int gatorCount = 1 + rand() % 2;
             if (gatorCount > gatorSlots)
                 gatorCount = gatorSlots;
-
-            vector<int> slotIndices(totalObjs);
+            vector<int> idx(totalObjs);
             for (int i = 0; i < totalObjs; i++)
-                slotIndices[i] = i;
+                idx[i] = i;
             for (int i = totalObjs - 1; i > 0; i--)
             {
                 int j = rand() % (i + 1);
-                int tmp = slotIndices[i];
-                slotIndices[i] = slotIndices[j];
-                slotIndices[j] = tmp;
+                swap(idx[i], idx[j]);
             }
             for (int i = 0; i < gatorCount; i++)
-                isGator[slotIndices[i]] = true;
+                isGator[idx[i]] = true;
         }
     }
 
     const int MIN_GAP = 2;
     string inner(LANE_WIDTH, '~');
-    int spacing = LANE_WIDTH / (totalObjs + 1);
-    int prevEnd = 0;
-
+    int spacing = LANE_WIDTH / (totalObjs + 1), prevEnd = 0;
     for (int i = 0; i < totalObjs; i++)
     {
-        int base = spacing * (i + 1) - 2 + (rand() % 5);
-        base--;
-
+        int base = spacing * (i + 1) - 2 + (rand() % 5) - 1;
         int minPos = prevEnd + MIN_GAP;
         if (base < minPos)
             base = minPos;
-
         int objsLeft = totalObjs - i - 1;
         int maxPos = LANE_WIDTH - OBS_SIZE - objsLeft * (OBS_SIZE + MIN_GAP);
         if (maxPos < minPos)
@@ -451,14 +425,11 @@ string generateRiverLane(int laneNum)
             base = maxPos;
         if (base < 0)
             base = 0;
-
         char ch = isGator[i] ? 'A' : '=';
         for (int j = 0; j < OBS_SIZE && base + j < LANE_WIDTH; j++)
             inner[base + j] = ch;
-
         prevEnd = base + OBS_SIZE;
     }
-
     return "|" + inner + "|";
 }
 
@@ -484,9 +455,7 @@ void shiftRight(string &lane)
 void shiftObstacles(Node *head)
 {
     Node *current = head;
-    int roadIndex = 0;
-    int riverIndex = 0;
-
+    int roadIndex = 0, riverIndex = 0;
     for (int row = 0; row < Total_Rows && current != nullptr; row++)
     {
         if (zoneMap[row] == ROAD)
@@ -526,16 +495,12 @@ Node *getLane(Node *head, int index)
 
 Node *buildRoad()
 {
-    Node *head = nullptr;
-    Node *tail = nullptr;
-    int roadIndex = 0;
-    int riverIndex = 0;
-
+    Node *head = nullptr, *tail = nullptr;
+    int roadIndex = 0, riverIndex = 0;
     for (int row = 0; row < Total_Rows; row++)
     {
         Node *newNode = new Node();
         newNode->next = nullptr;
-
         if (row == 0)
             newNode->data = "|========================================|";
         else if (zoneMap[row] == ROAD)
@@ -552,7 +517,6 @@ Node *buildRoad()
             newNode->data = generateBufferLane();
         else if (zoneMap[row] == START)
             newNode->data = "|                                        |";
-
         if (!head)
             head = tail = newNode;
         else
@@ -693,12 +657,10 @@ void updatePlayerWithLog(Node *head, int &playerX, int playerY)
         return;
     if (lane->data[playerX] != '=')
         return;
-
     int riverIndex = 0;
     for (int r = 0; r <= playerY; r++)
         if (zoneMap[r] == RIVER)
             riverIndex++;
-
     bool movesRight = (riverIndex % 2 == 1);
     if (movesRight)
     {
@@ -716,66 +678,67 @@ void updatePlayerWithLog(Node *head, int &playerX, int playerY)
 
 // ============================================================================
 //  BUFFERED RENDER MAP
-// ─────────────────────────────────────────────────────────────────────────────
-//  Instead of writing directly to cout, this function appends each row's
-//  rendered content into g_buf.back[row].  The DoubleBuffer::endFrame() call
-//  later emits only the rows that actually changed.
 // ============================================================================
 void renderMap(Node *head, int playerX, int playerY)
 {
+    // If flash is active, tint border chars on map edge rows red
+    bool flashOn = g_flashActive && (g_flashFrames % 2 == 0);
+
     Node *cur = head;
     int row = 0;
     while (cur)
     {
         const string &temp = cur->data;
         string lineOut;
-        lineOut.reserve(temp.size() * 12); // rough over-estimate for ANSI codes
+        lineOut.reserve(temp.size() * 14);
 
-        for (int i = 0; i < (int)temp.size(); i++)
+        // Left border — flash it red on damage frames
+        if (flashOn && row > 0 && row < Total_Rows - 1)
+            lineOut += g_flashBg + g_flashFg + temp[0] + RESET;
+        else
+            lineOut += temp[0];
+
+        for (int i = 1; i < (int)temp.size() - 1; i++)
         {
             if (row == playerY && i == playerX)
             {
-                lineOut += FG_YELLOW;
-                lineOut += BOLD;
-                lineOut += 'P';
-                lineOut += RESET;
+                // Player flickers on damage
+                if (g_flashActive && g_flashFrames % 3 == 0)
+                    lineOut += g_flashBg + FG_WHITE + BOLD + "P" + RESET;
+                else
+                    lineOut += FG_YELLOW + BOLD + "P" + RESET;
             }
             else if (temp[i] == '#')
             {
-                lineOut += FG_RED;
-                lineOut += temp[i];
-                lineOut += RESET;
+                lineOut += FG_RED + temp[i] + RESET;
             }
             else if (temp[i] == '=')
             {
-                lineOut += FG_BROWN;
-                lineOut += temp[i];
-                lineOut += RESET;
+                lineOut += FG_BROWN + temp[i] + RESET;
             }
             else if (temp[i] == 'A')
             {
-                lineOut += FG_GREEN;
-                lineOut += BOLD;
-                lineOut += temp[i];
-                lineOut += RESET;
+                lineOut += FG_GREEN + BOLD + temp[i] + RESET;
             }
             else if (temp[i] == '~')
             {
-                lineOut += FG_TEAL;
-                lineOut += temp[i];
-                lineOut += RESET;
+                lineOut += FG_TEAL + temp[i] + RESET;
             }
             else if (row == 0)
             {
-                lineOut += FG_GOLD;
-                lineOut += temp[i];
-                lineOut += RESET;
+                lineOut += FG_GOLD + temp[i] + RESET;
             }
             else
             {
                 lineOut += temp[i];
             }
         }
+
+        // Right border
+        if (flashOn && row > 0 && row < Total_Rows - 1)
+            lineOut += g_flashBg + g_flashFg + temp[temp.size() - 1] + RESET;
+        else
+            lineOut += temp[temp.size() - 1];
 
         g_buf.writeLine(row, lineOut);
         cur = cur->next;
@@ -784,44 +747,95 @@ void renderMap(Node *head, int playerX, int playerY)
 }
 
 // ============================================================================
-//  HUD — written into the buffer rows immediately after the map
+//  DAMAGE FLASH OVERLAY  (written into buffer rows below the map)
+// ============================================================================
+void renderDamageFlash()
+{
+    // Row Total_Rows is the separator/flash row
+    int r = Total_Rows;
+
+    if (!g_flashActive)
+    {
+        // Clear the flash row when inactive
+        g_buf.writeLine(r, FG_DGRAY + "  " + string(44, '-') + RESET);
+        g_flashFrames = 0;
+        return;
+    }
+
+    // Pulsing alert bar — alternates solid and dim every other frame
+    bool bright = (g_flashFrames % 2 == 0);
+    string bar;
+    bar += bright ? (g_flashBg + g_flashFg + BOLD) : (g_flashFg + DIM);
+
+    // Build the full-width alert bar (44 chars to match map width)
+    string content = "  " + g_flashIcon + "  " + g_flashMsg + "  ";
+    // Pad to 44
+    while ((int)content.size() < 44)
+        content += " ";
+    if ((int)content.size() > 44)
+        content = content.substr(0, 44);
+
+    bar += content + RESET;
+    g_buf.writeLine(r, bar);
+
+    g_flashFrames--;
+    if (g_flashFrames <= 0)
+        g_flashActive = false;
+}
+
+// ============================================================================
+//  HUD  — hearts with animated lost-heart indicator
 // ============================================================================
 void gameStatus(const string &playerName, int wins, int lives, int winsNeeded)
 {
-    // Row offsets: map occupies rows 0-19, HUD starts at row 20.
-    int r = Total_Rows; // row 20
+    int r = Total_Rows + 1; // row after the flash bar
 
-    g_buf.writeLine(r++, ""); // blank line
+    // ── Hearts row ──────────────────────────────────────────────────────────
+    string heartsRow;
+    heartsRow += "  " + FG_CYAN + BOLD + playerName.substr(0, 12) + RESET;
+    heartsRow += FG_DGRAY + "  |  " + RESET;
+    heartsRow += FG_YELLOW + "Crossings: " + FG_WHITE + BOLD + to_string(wins) + "/" + to_string(winsNeeded) + RESET;
+    heartsRow += FG_DGRAY + "  |  " + RESET;
+    heartsRow += FG_RED + "Lives: ";
 
-    // Separator
-    g_buf.writeLine(r++, FG_DGRAY + "  " + string(44, '-') + RESET);
-
-    // Row 1: Name | Crossings | Lives
-    string row1;
-    row1 += "  ";
-    row1 += FG_CYAN + BOLD + playerName.substr(0, 12) + RESET;
-    row1 += FG_DGRAY + "  |  " + RESET;
-    row1 += FG_YELLOW + "Crossings: " + FG_WHITE + BOLD + to_string(wins) + "/" + to_string(winsNeeded) + RESET;
-    row1 += FG_DGRAY + "  |  " + RESET;
-    row1 += FG_RED + "Lives: ";
+    // Full hearts
     for (int i = 0; i < lives; i++)
-        row1 += FG_RED + BOLD + "\xe2\x99\xa5 "; // UTF-8 ♥
-    row1 += RESET;
-    g_buf.writeLine(r++, row1);
+        heartsRow += FG_RED + BOLD + "\xe2\x99\xa5 "; // ♥
 
-    // Row 2: Controls & Difficulty
+    // Lost hearts — show broken heart (grey) for lost ones, flash them red
+    int maxLives = 3;
+    for (int i = lives; i < maxLives; i++)
+    {
+        if (g_flashActive)
+            heartsRow += FG_RED + DIM + "\xe2\x99\xa5 "; // dim red = just lost
+        else
+            heartsRow += FG_DGRAY + DIM + "\xe2\x99\xa5 "; // grey = already lost
+    }
+    heartsRow += RESET;
+    g_buf.writeLine(r++, heartsRow);
+
+    // ── Controls row ────────────────────────────────────────────────────────
     string row2;
     row2 += "  " + FG_DGRAY;
-    row2 += "[" + FG_WHITE + "\xe2\x86\x91\xe2\x86\x93\xe2\x86\x90\xe2\x86\x92/WASD" + FG_DGRAY + " Move]  "; // ↑↓←→
+    row2 += "[" + FG_WHITE + "\xe2\x86\x91\xe2\x86\x93\xe2\x86\x90\xe2\x86\x92/WASD" + FG_DGRAY + " Move]  ";
     row2 += "[" + FG_WHITE + "ESC/Q" + FG_DGRAY + " Quit]  ";
     row2 += FG_PINK + "Diff: " + FG_WHITE + g_diff.name + RESET;
     g_buf.writeLine(r++, row2);
 
     g_buf.writeLine(r++, FG_DGRAY + "  " + string(44, '-') + RESET);
+
+    // ── Legend row ──────────────────────────────────────────────────────────
+    string legend;
+    legend += "  ";
+    legend += FG_RED + "# Truck  " + RESET;
+    legend += FG_BROWN + "= Log    " + RESET;
+    legend += FG_TEAL + "~ River  " + RESET;
+    legend += FG_GREEN + "A Gator" + RESET;
+    g_buf.writeLine(r++, legend);
 }
 
 // ============================================================================
-//  TITLE SCREEN  (unchanged — direct cout, only called on first launch)
+//  TITLE SCREEN
 // ============================================================================
 void animateBorderSweep()
 {
@@ -986,7 +1000,7 @@ int selectDifficulty()
     cout << "  ║       SELECT DIFFICULTY          ║\n";
     cout << "  ╚══════════════════════════════════╝\n\n"
          << RESET;
-    cout << FG_GREEN << BOLD << "  [1] Easy    " << RESET << FG_DGRAY << "- 2 trucks · no gators · slow  · 3 wins\n\n"
+    cout << FG_GREEN << BOLD << "  [1] Easy    " << RESET << FG_DGRAY << "- 2 trucks · no gators · slow   · 3 wins\n\n"
          << RESET;
     cout << FG_RED << BOLD << "  [2] Hard    " << RESET << FG_DGRAY << "- 3 trucks · no gators · medium · 5 wins\n\n"
          << RESET;
@@ -1077,7 +1091,6 @@ string mainMenu()
     cout << FG_LGRAY << "  Your name will be saved to the leaderboard.\n\n"
          << RESET;
     cout << FG_CYAN << "  Name: " << FG_WHITE;
-
     string playerName;
     getline(cin, playerName);
     while (!playerName.empty() && playerName.front() == ' ')
@@ -1088,14 +1101,12 @@ string mainMenu()
         playerName = "Anonymous";
 
     selectDifficulty();
-
     clearScreen();
     cout << "\n\n  " << FG_GREEN << BOLD << "Difficulty: " << g_diff.name << RESET << "\n";
     cout << "  " << FG_CYAN << "Good luck, " << playerName << "!\n"
          << RESET;
     sleep_ms(1200);
     clearScreen();
-
     return playerName;
 }
 
@@ -1110,7 +1121,7 @@ void gameOverScreen(const string &playerName, int wins, const string &cause)
     {
         cout << FG_GOLD << BOLD;
         cout << "  ╔══════════════════════════════════╗\n";
-        cout << "  ║        \xf0\x9f\x8e\x89  YOU WIN!  \xf0\x9f\x8e\x89          ║\n"; // 🎉
+        cout << "  ║        \xf0\x9f\x8e\x89  YOU WIN!  \xf0\x9f\x8e\x89          ║\n";
         cout << "  ╚══════════════════════════════════╝\n\n"
              << RESET;
         cout << FG_GREEN << "  " << playerName << " crossed " << wins << " times!\n\n"
@@ -1120,7 +1131,7 @@ void gameOverScreen(const string &playerName, int wins, const string &cause)
     {
         cout << FG_RED << BOLD;
         cout << "  ╔══════════════════════════════════╗\n";
-        cout << "  ║         \xf0\x9f\x92\x80  GAME OVER  \xf0\x9f\x92\x80        ║\n"; // 💀
+        cout << "  ║         \xf0\x9f\x92\x80  GAME OVER  \xf0\x9f\x92\x80        ║\n";
         cout << "  ╚══════════════════════════════════╝\n\n"
              << RESET;
         cout << FG_RED << "  Cause: " << FG_WHITE << BOLD << cause << RESET << "\n";
@@ -1141,7 +1152,6 @@ int main()
     srand(static_cast<unsigned>(time(nullptr)));
     loadLeaderboard();
 
-    // Initialise the double-buffer (covers map rows + HUD rows).
     g_buf.init(BUF_ROWS);
 
     string playerName = mainMenu();
@@ -1155,27 +1165,41 @@ int main()
         int playerY = Total_Rows - 1;
         int wins = 0;
         int lives = 3;
+        g_prevLives = 3;
         string deathCause = "";
+
+        // Reset flash state at game start
+        g_flashActive = false;
+        g_flashFrames = 0;
 
         PlaySound("Songs/slimeyfox.wav", NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
 
-        // Full repaint on game start so no stale pixels remain.
         clearScreen();
         g_buf.invalidate();
 
         int tickCounter = 0;
         bool running = true;
 
-        // Frame-rate limiter: target ~30 fps (33 ms per frame).
-        // We measure wall time and sleep only the remainder after game logic.
         LARGE_INTEGER freq, frameStart, frameEnd;
         QueryPerformanceFrequency(&freq);
+
+        // Respawn lambda (defined once, used in collision blocks)
+        auto respawn = [&]()
+        {
+            freeList(head);
+            head = buildRoad();
+            playerX = LANE_WIDTH / 2;
+            playerY = Total_Rows - 1;
+            tickCounter = 0;
+            clearScreen();
+            g_buf.invalidate();
+        };
 
         while (running)
         {
             QueryPerformanceCounter(&frameStart);
 
-            // 1. Input
+            // ── 1. Input ────────────────────────────────────────────────────
             char input = keyboardInput();
             if (input == 'Q')
             {
@@ -1185,19 +1209,36 @@ int main()
             }
 
             int newX = playerX, newY = playerY;
+            bool moved = false;
             if (input == 'U' && playerY > 0)
+            {
                 newY--;
+                moved = true;
+            }
             else if (input == 'D' && playerY < Total_Rows - 1)
+            {
                 newY++;
+                moved = true;
+            }
             else if (input == 'L')
+            {
                 newX--;
+                moved = true;
+            }
             else if (input == 'R')
+            {
                 newX++;
+                moved = true;
+            }
+
+            // Jump sound on any movement (soft, non-blocking)
+            if (moved)
+                playSFX("Songs/jump.wav");
 
             playerX = newX;
             playerY = newY;
 
-            // 2. Log carry + obstacle shift
+            // ── 2. Log carry + obstacle shift ───────────────────────────────
             tickCounter++;
             bool obstacleThisTick = (tickCounter % g_diff.obstacleEvery == 0);
             if (obstacleThisTick)
@@ -1206,10 +1247,11 @@ int main()
                 shiftObstacles(head);
             }
 
-            // 3. Win detection
+            // ── 3. Win detection ─────────────────────────────────────────────
             if (playerY == 0)
             {
                 wins++;
+                playSFX("Songs/jump.wav"); // victory hop
                 if (wins >= g_diff.winsNeeded)
                 {
                     deathCause = "WIN";
@@ -1221,6 +1263,7 @@ int main()
                 playerX = LANE_WIDTH / 2;
                 playerY = Total_Rows - 1;
                 tickCounter = 0;
+                g_flashActive = false;
                 clearScreen();
                 g_buf.invalidate();
                 cout << FG_GREEN << BOLD
@@ -1234,27 +1277,19 @@ int main()
                 continue;
             }
 
-            // 4. Render via double-buffer
+            // ── 4. Render ────────────────────────────────────────────────────
             g_buf.beginFrame();
             renderMap(head, playerX, playerY);
+            renderDamageFlash(); // flash bar row + tinted borders
             gameStatus(playerName, wins, lives, g_diff.winsNeeded);
-            g_buf.endFrame(); // single fwrite for changed lines only
+            g_buf.endFrame();
 
-            // 5. Collisions
-            auto respawn = [&]()
-            {
-                freeList(head);
-                head = buildRoad();
-                playerX = LANE_WIDTH / 2;
-                playerY = Total_Rows - 1;
-                tickCounter = 0;
-                clearScreen();
-                g_buf.invalidate();
-            };
-
+            // ── 5. Collisions ─────────────────────────────────────────────────
             if (checkBorderOut(playerX))
             {
                 lives--;
+                triggerFlash("OUT OF BOUNDS!", FG_WHITE, BG_ORANGE,
+                             "\xe2\x9a\xa0", "Songs/hit.wav"); // ⚠
                 if (lives <= 0)
                 {
                     deathCause = "OUT OF BOUNDS";
@@ -1262,18 +1297,26 @@ int main()
                 }
                 else
                 {
-                    clearScreen();
-                    cout << FG_ORANGE << BOLD << "\n  OUT OF BOUNDS! Lives left: " << lives << "\n"
-                         << RESET;
-                    cout.flush();
-                    sleep_ms(800);
+                    // Let the flash render for a bit before respawning
+                    for (int f = 0; f < 6 && g_flashActive; f++)
+                    {
+                        g_buf.beginFrame();
+                        renderMap(head, playerX, playerY);
+                        renderDamageFlash();
+                        gameStatus(playerName, wins, lives, g_diff.winsNeeded);
+                        g_buf.endFrame();
+                        sleep_ms(g_diff.renderMs);
+                    }
                     respawn();
                 }
                 continue;
             }
+
             if (checkCollision(head, playerX, playerY))
             {
                 lives--;
+                triggerFlash("SQUISHED BY TRUCK!", FG_WHITE, BG_RED,
+                             "\xf0\x9f\x9a\x9b", "Songs/hit.wav"); // 🚛
                 if (lives <= 0)
                 {
                     deathCause = "TRUCK";
@@ -1281,18 +1324,25 @@ int main()
                 }
                 else
                 {
-                    clearScreen();
-                    cout << FG_RED << BOLD << "\n  SQUISHED! Lives left: " << lives << "\n"
-                         << RESET;
-                    cout.flush();
-                    sleep_ms(800);
+                    for (int f = 0; f < 6 && g_flashActive; f++)
+                    {
+                        g_buf.beginFrame();
+                        renderMap(head, playerX, playerY);
+                        renderDamageFlash();
+                        gameStatus(playerName, wins, lives, g_diff.winsNeeded);
+                        g_buf.endFrame();
+                        sleep_ms(g_diff.renderMs);
+                    }
                     respawn();
                 }
                 continue;
             }
+
             if (checkAlligator(head, playerX, playerY))
             {
                 lives--;
+                triggerFlash("CHOMPED BY GATOR!", FG_WHITE, BG_GREEN,
+                             "\xf0\x9f\x90\x8a", "Songs/chomp.wav"); // 🐊
                 if (lives <= 0)
                 {
                     deathCause = "ALLIGATOR";
@@ -1300,18 +1350,25 @@ int main()
                 }
                 else
                 {
-                    clearScreen();
-                    cout << FG_GREEN << BOLD << "\n  EATEN! Lives left: " << lives << "\n"
-                         << RESET;
-                    cout.flush();
-                    sleep_ms(800);
+                    for (int f = 0; f < 6 && g_flashActive; f++)
+                    {
+                        g_buf.beginFrame();
+                        renderMap(head, playerX, playerY);
+                        renderDamageFlash();
+                        gameStatus(playerName, wins, lives, g_diff.winsNeeded);
+                        g_buf.endFrame();
+                        sleep_ms(g_diff.renderMs);
+                    }
                     respawn();
                 }
                 continue;
             }
+
             if (checkDrowned(head, playerX, playerY))
             {
                 lives--;
+                triggerFlash("DROWNED!", FG_WHITE, BG_TEAL,
+                             "\xf0\x9f\x92\xa7", "Songs/splash.wav"); // 💧
                 if (lives <= 0)
                 {
                     deathCause = "DROWNED";
@@ -1319,17 +1376,21 @@ int main()
                 }
                 else
                 {
-                    clearScreen();
-                    cout << FG_TEAL << BOLD << "\n  DROWNED! Lives left: " << lives << "\n"
-                         << RESET;
-                    cout.flush();
-                    sleep_ms(800);
+                    for (int f = 0; f < 6 && g_flashActive; f++)
+                    {
+                        g_buf.beginFrame();
+                        renderMap(head, playerX, playerY);
+                        renderDamageFlash();
+                        gameStatus(playerName, wins, lives, g_diff.winsNeeded);
+                        g_buf.endFrame();
+                        sleep_ms(g_diff.renderMs);
+                    }
                     respawn();
                 }
                 continue;
             }
 
-            // 6. Frame-rate cap: sleep the remaining time in the 33 ms budget.
+            // ── 6. Frame-rate cap ─────────────────────────────────────────────
             QueryPerformanceCounter(&frameEnd);
             long long elapsed = (frameEnd.QuadPart - frameStart.QuadPart) * 1000 / freq.QuadPart;
             long long remaining = (long long)g_diff.renderMs - elapsed;
@@ -1359,6 +1420,7 @@ int main()
             sleep_ms(1200);
             clearScreen();
             g_buf.invalidate();
+            g_flashActive = false;
             PlaySound("Songs/slimeyfox.wav", NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
         }
         else
