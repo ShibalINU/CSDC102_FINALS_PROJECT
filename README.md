@@ -38,11 +38,11 @@ _Help the player cross dangerous terrains and survive as long as possible._
 ---
 
 **Contributors**
-- Mendoza Aljosh Kyle Benedict
-- Octeza Katrize Jiliane
-- Panis Mark Angelo
-- Ros Henry James
-- Valenciano Romeo Alejandro
+- Mendoza, Aljosh Kyle Benedict A.
+- Octeza, Katrize Jilliane E.
+- Panis, Mark Angelo C.
+- Ros, Henry James H.
+- Valenciano, Romeo Alejandro P.
 
 ## How to Run  
 
