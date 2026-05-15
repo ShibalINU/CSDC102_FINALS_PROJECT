@@ -15,13 +15,15 @@ _Help the player cross dangerous terrains and survive as long as possible._
   -  Roads – Avoid fast-moving vehicles
   - _Rivers – Jump across floating platforms/logs_
   - _Safe Zones – Brief moments to pause and plan_
+  - _Alligators - Chompy buddies ready to kill you_
 
 
 **Core Mechanics**
 -  _Move forward to progress_
 -  _Move sideways to dodge obstacles_
 - Collision = Game Over_
-- _ Increasing difficulty over time_
+- _Increasing difficulty over time_
+- _Avoid Alligators_
  
 **Tech Stack**
 - **Language:** C++
