@@ -33,6 +33,13 @@ _Help the player cross dangerous terrains and survive as long as possible._
   - Game Loop & Real-Time Input Handling
 ---
 
+**Contributors**
+- Mendoza Aljosh Kyle Benedict
+- Octeza Katrize Jiliane
+- Panis Mark Angelo
+- Ros Henry Jamee
+- Valenciano Romeo Alejandro
+
 ## How to Run  
 
 **1. Open Project Folder**
