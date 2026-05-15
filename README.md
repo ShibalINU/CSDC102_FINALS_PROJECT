@@ -39,15 +39,15 @@ _Help the player cross dangerous terrains and survive as long as possible._
 
 ```bash
 git clone https://github.com/your-username/crossy-road-terminal.git
-cd crossy-road-terminal
+cd src
 ```
 
 **2. Compile the program**
 ```
-g++ main.cpp -o crossy
+**g++ main.cpp -o crossy**
 
 ```
 **4. Run the game**
 ```
-./crossy
+./main
 ```
