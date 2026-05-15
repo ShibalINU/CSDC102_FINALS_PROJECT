@@ -6,6 +6,10 @@
 
 **Screenshots of Title Screen, Gameplay, and Leaderboard:** https://drive.google.com/drive/folders/1KKR3U21kvsU5PN6WxV9MW8bEOXIQsUnJ?usp=drive_link
 
+
+<img width="585" height="439" alt="Title Screen" src="https://github.com/user-attachments/assets/8a914874-1408-4e2b-a727-88747a9373bd" />
+
+
 Project Overview
 
 This project is a terminal-based C++ recreation of the classic arcade game Crossy Road. Instead of flashy graphics, the game runs entirely in the console, focusing on logic, timing, and player interaction.
@@ -63,8 +67,5 @@ g++ main.cpp -o main -lwinmm
 ```
 
 **Screenshot Gallery**
-_**Title Screen**_
-<img width="585" height="439" alt="Title Screen" src="https://github.com/user-attachments/assets/8a914874-1408-4e2b-a727-88747a9373bd" />
 
-_**Leaderboard**_
 <img width="473" height="322" alt="Leaderboard" src="https://github.com/user-attachments/assets/b3f85f10-8acc-49ea-b00d-22e1b94437aa" />
