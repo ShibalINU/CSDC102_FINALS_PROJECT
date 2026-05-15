@@ -35,10 +35,9 @@ _Help the player cross dangerous terrains and survive as long as possible._
 
 ## How to Run  
 
-**1. Clone the repository**
+**1. Open Project Folder**
 
 ```bash
-git clone https://github.com/your-username/crossy-road-terminal.git
 cd src
 ```
 
